@@ -2,13 +2,14 @@
 // set type:"module" to use import export
 
 import express from 'express'
-import dotenv from 'dotenv'
+import {ENV} from "./config/env.config.js";
+import {connectDB} from "./config/db.config.js";
 
-dotenv.config();
-
-const PORT = process.env.PORT ;
+const PORT = ENV.PORT;
 
 const app = express();
-console.log(PORT)
-
-app.listen(PORT, ()=> console.log(`Server is up and on port ${PORT}`))
+connectDB().then(()=>{
+    app.listen(PORT, ()=> {
+        console.log(`Server is up and run on port ${PORT}`)
+    })
+});
