@@ -1,13 +1,21 @@
 // default type is commonjs which we can't use import export,
 // set type:"module" to use import export
 
+
 import express from 'express'
+import cors from "cors";
 import { ENV } from "./config/env.config.js";
 import { connectDB } from "./config/db.config.js";
+import {clerkMiddleware} from "@clerk/express"
+import userRoute from "./route/user.route.js"
 
 const PORT = ENV.PORT;
-
 const app = express();
+app.use(cors({origin:ENV.FRONTEND_URL, credentials:true}));
+app.use(express.json());
+app.use(clerkMiddleware());
+
+app.use("/api/users", userRoute)
 
 const startServer = async () => {
     try {
