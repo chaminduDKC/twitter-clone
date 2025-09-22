@@ -11,7 +11,7 @@ import userRoute from "./route/user.route.js"
 
 const PORT = ENV.PORT;
 const app = express();
-app.use(cors());
+app.use(cors({origin:ENV.FRONTEND_URL, credentials:true}));
 app.use(express.json());
 app.use(clerkMiddleware());
 

@@ -7,7 +7,7 @@ router.get("/get-user/:username", getUserProfile);
 
 
 router.delete("/delete-user",protectedRoute, deleteUser);
-router.post("sync-user", protectedRoute, syncUser);
+router.post("/sync-user", protectedRoute, syncUser);
 router.put("/update-user", protectedRoute, updateUser);
 router.post("/follow/:targetUserId",protectedRoute, followUser);
 
