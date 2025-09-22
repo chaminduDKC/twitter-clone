@@ -43,9 +43,10 @@ export const updateUser = async (req, res) => {
 }
 
 export const syncUser = async (req, res) => {
+    try {
     const { userId } = getAuth(req);
     if (!userId) return res.status(400).json({ error: "User id not found" });
-    try {
+    
         const existingUser = await User.findOne({ clerkId: userId });
         if (existingUser) return res.status(200).json({ message: "User already exists" });
 
