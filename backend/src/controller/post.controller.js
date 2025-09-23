@@ -24,24 +24,30 @@ export const getPosts = async (req, res)=>{
 };
 
 export const getPost = async (req, res)=>{
-    const { postId } = req.params;
-    if(!postId) return res.status(404).json({message:"Post id not found"});
+    try {
+        const { postId } = req.params;
+        if(!postId) return res.status(404).json({message:"Post id not found"});
 
-    const post = await Post.findById(postId)
-        .populate("user", "username firstName lastName profilePicture")
-        .populate({
-            path:"comments",
-            populate:{
-                path:"user",
-                select:"username firstName lastName profilePicture"
-            }
-        })
-    if(!post) return res.status(404).json({message:"Post not found"});
-    res.status(200).json({post});
+        const post = await Post.findById(postId)
+            .populate("user", "username firstName lastName profilePicture")
+            .populate({
+                path:"comments",
+                populate:{
+                    path:"user",
+                    select:"username firstName lastName profilePicture"
+                }
+            })
+        if(!post) return res.status(404).json({message:"Post not found"});
+        res.status(200).json({post});
+    } catch (e) {
+        res.status(500).json({message:"Internal Server Error", e})
+    }
+
 
 };
 
 export const getUserPosts = async (req, res)=>{
+    try {
     const { username } = req.params;
     if(!username) return res.status(404).json({message:"Username not found"});
     const user = await User.findOne({ username });
@@ -61,6 +67,10 @@ export const getUserPosts = async (req, res)=>{
     if(posts.length === 0) return res.status(200).json({message:"Posts are zero"});
 
     res.status(200).json(posts)
+
+    } catch (e) {
+        res.status(500).json({message:"Internal Server Error", e})
+    }
 };
 
 export const createPost = async (req, res)=>{
@@ -92,97 +102,112 @@ export const createPost = async (req, res)=>{
             ]
         });
         imageUrl = uploadResponse.secure_url;
+
+        const post = await Post.create({
+            user:this.user._id,
+            content:this.content || "",
+            image:this.imageUrl
+        });
+
+        res.status(201).json({post});
     } catch (uploadError) {
-        console.error("cloudinary error "+uploadError)
+        console.error("cloudinary error or unknown error "+uploadError)
         return res.status(400).json({error:"Failed to upload" + uploadError})
     }
-
-    const post = await Post.create({
-        user:this.user._id,
-        content:this.content || "",
-        image:this.imageUrl
-    });
-
-    res.status(201).json({post});
 };
 
 export const likePost = async (req, res)=>{
-    const { postId } = req.params;
-    if(!postId) return res.status(404).json({error:"Post id not found"});
-    const {userId} = getAuth(req);
-    const post = await Post.findById(postId);
-    const user = await User.findOne({clerkId: userId})
+    try{
+        const { postId } = req.params;
+        if(!postId) return res.status(404).json({error:"Post id not found"});
+        const {userId} = getAuth(req);
+        const post = await Post.findById(postId);
+        const user = await User.findOne({clerkId: userId})
 
-    if(!post) return res.status(404).json({error:"Post not found"});
-    if(!user) return res.status(404).json({error:"User not found"});
+        if(!post) return res.status(404).json({error:"Post not found"});
+        if(!user) return res.status(404).json({error:"User not found"});
 
-    const isLiked = post.likes.includes(user._id);
-    if(isLiked){
-        await Post.findByIdAndUpdate(postId, {
-            $pull:{likes:user._id}
-        });
-    } else {
-        await Post.findByIdAndUpdate(postId, {
-            $push:{likes:user._id}
-        });
-
-        if(post.user.toString() !== user._id.toString()){
-            await Notification.create({
-                from:user._id,
-                to:post.user,
-                type:"like",
-                post:postId
+        const isLiked = post.likes.includes(user._id);
+        if(isLiked){
+            await Post.findByIdAndUpdate(postId, {
+                $pull:{likes:user._id}
             });
+        } else {
+            await Post.findByIdAndUpdate(postId, {
+                $push:{likes:user._id}
+            });
+
+            if(post.user.toString() !== user._id.toString()){
+                await Notification.create({
+                    from:user._id,
+                    to:post.user,
+                    type:"like",
+                    post:postId
+                });
+            }
         }
+        res.status(200).json({
+            message:isLiked ? "Post unliked" : "Post liked"
+        });
+    } catch (e) {
+        res.status(500).json({message:"Internal Server Error", e})
     }
-    res.status(200).json({
-        message:isLiked ? "Post unliked" : "Post liked"
-    });
+
 };
 
 export const commentPost = async (req, res)=>{
-    const {userId} = getAuth(req);
-    const {postId} = req.params;
-    const {content} = req.body;
-    if(!userId || !postId || !content) return res.status(400).json({error:"Bad Request. Some fields are missing"})
+    try{
+        const {userId} = getAuth(req);
+        const {postId} = req.params;
+        const {content} = req.body;
+        if(!userId || !postId || !content) return res.status(400).json({error:"Bad Request. Some fields are missing"})
 
-    const post = await Post.findById(postId);
-    const user =await User.findOne({clerkId: userId})
+        const post = await Post.findById(postId);
+        const user =await User.findOne({clerkId: userId})
 
-    if(!user || !post) return res.status(404).json({error:"User or Post not found"})
+        if(!user || !post) return res.status(404).json({error:"User or Post not found"})
 
-    await Post.findOneAndUpdate(postId, {
-        $push:{comments:user._id}
-    })
-
-    if(user._id.toString() !== post.user.toString()){
-        await Notification.create({
-            from:user,
-            to:post.user,
-            type:"comment",
-            post:post
+        await Post.findOneAndUpdate(postId, {
+            $push:{comments:user._id}
         })
+
+        if(user._id.toString() !== post.user.toString()){
+            await Notification.create({
+                from:user,
+                to:post.user,
+                type:"comment",
+                post:post
+            })
+        }
+        res.status(200).json({
+            message:"commented on your post"
+        });
+    } catch (e) {
+        res.status(500).json({message:"Internal Server Error", e})
     }
-    res.status(200).json({
-        message:"commented on your post"
-    });
+
 };
 
 export const deletePost = async (req, res)=>{
-  const {postId} = req.params;
-  const {userId} = getAuth(req);
+    try{
+        const {postId} = req.params;
+        const {userId} = getAuth(req);
 
-  if(!postId || !userId) return res.status(404).json({error:"post id or user id not found"});
+        if(!postId || !userId) return res.status(404).json({error:"post id or user id not found"});
 
-  const user = await User.findOne({clerkId: userId});
-  const post =  await Post.findById(postId);
-  if(!post || !user) return res.status(404).json({error:"post or user not found"});
+        const user = await User.findOne({clerkId: userId});
+        const post =  await Post.findById(postId);
+        if(!post || !user) return res.status(404).json({error:"post or user not found"});
 
-  if(post.user.toString() !== user._id.toString()){
-      return res.status(403).json({error:"Unauthorized. Can not be deleted other posts"});
-  }
-  await Comment.deleteMany({post:postId})
+        if(post.user.toString() !== user._id.toString()){
+            return res.status(403).json({error:"Unauthorized. Can not be deleted other posts"});
+        }
+        await Comment.deleteMany({post:postId})
 
-  await Post.findByIdAndDelete(postId);
-  res.status(200).json({message:"Post deleted successfully"});
+        await Post.findByIdAndDelete(postId);
+        res.status(200).json({message:"Post deleted successfully"});
+    } catch (e){
+        res.status(500).json({message:"Internal Server Error", e})
+    }
+
 };
