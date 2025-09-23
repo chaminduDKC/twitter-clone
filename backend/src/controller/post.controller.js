@@ -92,7 +92,7 @@ export const createPost = async (req, res)=>{
         const base64Image = `data:${imageFile.mimetype};base64,${imageFile.buffer.toString(
             "base64"
         )}`;
-        const uploadResponse = await cloudinaryConfig.upload(base64Image, {
+        const uploadResponse = await cloudinaryConfig.uploader.upload(base64Image, {
             folder:"social_media_posts",
             resource_type:"image",
             transformation:[
@@ -104,9 +104,9 @@ export const createPost = async (req, res)=>{
         imageUrl = uploadResponse.secure_url;
 
         const post = await Post.create({
-            user:this.user._id,
-            content:this.content || "",
-            image:this.imageUrl
+            user:user._id,
+            content:content || "",
+            image:imageUrl
         });
 
         res.status(201).json({post});
@@ -167,8 +167,13 @@ export const commentPost = async (req, res)=>{
 
         if(!user || !post) return res.status(404).json({error:"User or Post not found"})
 
+        const comment = await Comment.create({
+            user:user._id,
+            post:postId,
+            content
+        })
         await Post.findOneAndUpdate(postId, {
-            $push:{comments:user._id}
+            $push:{comments:comment._id}
         })
 
         if(user._id.toString() !== post.user.toString()){
