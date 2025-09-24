@@ -3,16 +3,19 @@ import {getAuth} from "@clerk/express";
 import Post from "../model/post.model.js";
 import User from "../model/user.model.js";
 import Notification from "../model/notification.model.js";
+import {isValidObjectId} from "mongoose";
 
 
 export const getComments = async (req, res)=>{
     try{
         const {postId} = req.params;
         if(!postId) return res.status(400).json({error:"Post ID is required"});
-        const comments = await Comment.findOne({post:postId}).sort({createdAt: -1})
+        const comments = await Comment.find({post:postId}).sort({createdAt: -1})
             .populate("user", "username firstName lastName profilePicture")
+
+        if(comments.length === 0) return res.status(200).json({error:"No comments found. Empty array"});
         if(!comments) return res.status(404).json({error:"No comments found"});
-        if(comments.length === 0) return res.status(404).json({error:"No comments found. Empty array"});
+
 
         res.status(200).json({comments});
     } catch (e) {
@@ -27,7 +30,7 @@ export const createComment = async (req, res)=>{
     try {
         const {content} = req.body;
         const {userId} = getAuth(req);
-        if(!userId) return res.status(404).json({error:"No user id found"});
+        if(!userId) return res.status(401).json({error:"Unauthorized"});
         if(!content || content.trimEnd() === "")return res.status(400).json({error:"bad request. Empty comment"});
         const {postId} = req.params;
         if(!postId) return res.status(400).json({error:"Post ID is required"});
@@ -35,9 +38,9 @@ export const createComment = async (req, res)=>{
         const post = await Post.findById(postId);
         if(!post) return res.status(404).json({error:"No post found"});
 
-        const user = User.findOne({clerkId: userId})
+        const user = await User.findOne({clerkId: userId})
         if(!user) return res.status(404).json({error:"No user found"});
-        const newComment = Comment.create({
+        const newComment =await Comment.create({
             user:user._id,
             post:postId,
             content
@@ -68,7 +71,10 @@ export const deleteComment = async (req, res)=>{
         const {userId} = getAuth(req);
         const user = await User.findOne({clerkId: userId})
         const comment = await Comment.findById(commentId);
-        if(!userId || !commentId) return res.status(400).json({error:"Bad request. Missing parameters"});
+        if (!userId) return res.status(401).json({ error: "Unauthorized" });
+        if (!commentId) return res.status(400).json({ error: "Comment ID is required" });
+
+        if (!isValidObjectId(commentId)) return res.status(400).json({ error: "Invalid comment ID" });
 
         if(user._id.toString() !== comment.user.toString()){
             return res.status(403).json({error:"You are not authorized to delete this comment"})
