@@ -19,8 +19,8 @@ app.use(clerkMiddleware());
 app.use("/api/users", userRoute)
 app.use("/api/posts", postRoute)
 
-// middlew for err handling
-app.use((err, req, res)=>{
+// middleware for err handling
+app.use((err, req, res, next)=>{
     console.error("Unhandled error" + err)
     res.status(500).json({error:err || "Internal Server Error"})
 })
