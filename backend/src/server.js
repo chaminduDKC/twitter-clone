@@ -8,6 +8,7 @@ import { ENV } from "./config/env.config.js";
 import { connectDB } from "./config/db.config.js";
 import {clerkMiddleware} from "@clerk/express"
 import userRoute from "./route/user.route.js"
+import postRoute from "./route/post.route.js"
 
 const PORT = ENV.PORT;
 const app = express();
@@ -16,6 +17,13 @@ app.use(express.json());
 app.use(clerkMiddleware());
 
 app.use("/api/users", userRoute)
+app.use("/api/posts", postRoute)
+
+// middleware for err handling
+app.use((err, req, res, next)=>{
+    console.error("Unhandled error" + err)
+    res.status(500).json({error:err || "Internal Server Error"})
+})
 
 const startServer = async () => {
     try {
