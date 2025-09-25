@@ -34,9 +34,12 @@ app.use((err, req, res, next)=>{
 const startServer = async () => {
     try {
         await connectDB();
-        app.listen(PORT, () => {
-            console.log(`Server is up and run on port ${PORT}`)
-        })
+        if(ENV.NODE_ENV !== "production"){
+            app.listen(PORT, () => {
+                console.log(`Server is up and run on port ${PORT}`)
+            })
+        }
+
     } catch (error) {
         logger.error("Error in starting server", error);
         process.exit(1);
