@@ -10,16 +10,20 @@ import {clerkMiddleware} from "@clerk/express"
 import userRoute from "./route/user.route.js"
 import postRoute from "./route/post.route.js"
 import commentRoute from "./route/comment.route.js"
+import notificationRoute from "./route/notification.route.js";
+import {arcjetMiddleware} from "./middleware/arcjet.middleware.js";
 
 const PORT = ENV.PORT;
 const app = express();
 app.use(cors({origin:ENV.FRONTEND_URL, credentials:true}));
 app.use(express.json());
 app.use(clerkMiddleware());
+app.use(arcjetMiddleware)
 
 app.use("/api/users", userRoute)
 app.use("/api/posts", postRoute)
 app.use("/api/comments", commentRoute)
+app.use("/api/notifications", notificationRoute)
 
 // middleware for err handling
 app.use((err, req, res, next)=>{
