@@ -8,6 +8,7 @@ export const getNotifications = async (req, res)=>{
 
         const user = await User.findOne({clerkId: userId});
         if(!userId) return res.status(401).json({error:"Unauthorized"});
+        if(!user) return res.status(404).json({error:"user not found"});
 
         const notifications = await Notification.find({to: user._id}).sort({createdAt:-1})
             .populate("from", "username firstName lastName profilePicture")

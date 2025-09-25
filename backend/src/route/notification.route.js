@@ -5,5 +5,5 @@ import {protectedRoute} from "../middleware/auth.middleware.js";
 const route = express.Router();
 
 route.get("/", protectedRoute, getNotifications)
-route.get("/:notificationId", protectedRoute, deleteNotification)
+route.delete("/:notificationId", protectedRoute, deleteNotification)
 export default route;
