@@ -20,6 +20,7 @@ app.use(express.json());
 app.use(clerkMiddleware());
 app.use(arcjetMiddleware)
 
+app.get("/", (req, res) => res.send("Hello from server"));
 app.use("/api/users", userRoute)
 app.use("/api/posts", postRoute)
 app.use("/api/comments", commentRoute)
