@@ -15,7 +15,7 @@ import {arcjetMiddleware} from "./middleware/arcjet.middleware.js";
 
 const PORT = ENV.PORT;
 const app = express();
-app.use(cors({origin:ENV.FRONTEND_URL, credentials:true}));
+app.use(cors());
 app.use(express.json());
 app.use(clerkMiddleware());
 app.use(arcjetMiddleware)
